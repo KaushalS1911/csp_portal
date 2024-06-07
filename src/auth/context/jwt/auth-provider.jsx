@@ -103,7 +103,7 @@ export function AuthProvider({ children }) {
 
   // LOGIN
   const login = useCallback(async (data) => {
-    const response = await axios.post(`${AUTH_API}${endpoints.auth.login}`, data);
+    const response = await axios.post(`http://ec2-54-173-125-80.compute-1.amazonaws.com:8080/nccf/csp_login`, data);
 
     const { csp_code, phone_number } = response.data.data[0];
 

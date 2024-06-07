@@ -27,39 +27,32 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { PATH_AFTER_LOGIN } from '../../../config-global';
 import { paths } from '../../../routes/paths';
 import { RHFTextField, RHFRadioGroup, RHFCheckbox } from '../../../components/hook-form';
-
+import FormProvider from 'src/components/hook-form/form-provider';
 // ----------------------------------------------------------------------
-
 export default function JwtLoginView() {
   const { login } = useAuthContext();
-
   const router = useRouter();
-
   const [errorMsg, setErrorMsg] = useState('');
-
   const searchParams = useSearchParams();
-
   const returnTo = searchParams.get('returnTo');
-
-
   const LoginSchema = Yup.object().shape({
     phone_number: Yup.string().required('Phone number is required'),
     password: Yup.string().required('Password is required'),
-   // confirmPassword: Yup.string().required("Conform password is require"),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref('password'), null], 'Passwords must match')
+      .required('Confirm password is required'),
     category: Yup.string().required('Vendor category is required'),
   });
-
   const defaultValues = {
     phone_number: '',
     password: '',
+    confirmPassword: '',
     category: '',
   };
-
   const methods = useForm({
-    // resolver: yupResolver(LoginSchema),
+    resolver: yupResolver(LoginSchema),
     defaultValues,
   });
-
   const {
     reset,
     control,
@@ -67,22 +60,22 @@ export default function JwtLoginView() {
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
-
   const onSubmit = handleSubmit(async (data) => {
-    // try {
-    //   await login?.(data);
-    //
-    //   router.push(returnTo || PATH_AFTER_LOGIN);
-    // } catch (error) {
-    //   console.error(error);
-    //   reset();
-    //   setErrorMsg(typeof error === 'string' ? error : error.message);
-    // }
-     console.log("Data : ",data);
-
+    const payload = {
+      phone_number: data.phone_number,
+      password: data.password,
+      category: data.category
+    }
+    try {
+      await login?.(payload);
+      router.push(returnTo || PATH_AFTER_LOGIN);
+    } catch (error) {
+      console.error(error);
+      reset();
+      setErrorMsg(typeof error === 'string' ? error : error.message);
+    }
+    console.log("Data : ",payload);
   });
-
-
   return (
     <>
       <Container maxWidth="sm">
@@ -104,48 +97,18 @@ export default function JwtLoginView() {
               >
                 <img src={logo} alt="BootstrapBrain Logo" />
               </Box>
-              <form onSubmit={handleSubmit(onSubmit)}>
+              <FormProvider onSubmit={onSubmit} methods={methods}>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    {/*<Controller*/}
-                    {/*  name="phone_number"*/}
-                    {/*  control={control}*/}
-                    {/*  render={({ field }) => (*/}
-                    {/*    <TextField {...field} label="Phone Number" fullWidth required />*/}
-                    {/*  )}*/}
-                    {/*/>*/}
                     <RHFTextField name="phone_number" label="Phone Number"/>
                   </Grid>
                   <Grid item xs={12} sx={{ my: '10px' }}>
-                    {/*<Controller*/}
-                    {/*  name="password"*/}
-                    {/*  control={control}*/}
-                    {/*  render={({ field }) => (*/}
-                    {/*    <TextField {...field} label="Password" type="password" fullWidth required />*/}
-                    {/*  )}*/}
-                    {/*/>*/}
                     <RHFTextField name={"password"} label={"Password"}/>
                   </Grid>
+                  <Grid item xs={12} sx={{ my: '10px' }}>
+                    <RHFTextField name={"confirmPassword"} label={"Conform Password"}/>
+                  </Grid>
                   <Grid item xs={12}>
-                    {/*<Controller*/}
-                    {/*  name="category"*/}
-                    {/*  control={control}*/}
-                    {/*  render={({ field }) => (*/}
-                    {/*    <RadioGroup {...field} row>*/}
-                    {/*      <FormControlLabel value="Miller" control={<Radio />} label="Miller" />*/}
-                    {/*      <FormControlLabel*/}
-                    {/*        value="Distributor"*/}
-                    {/*        control={<Radio />}*/}
-                    {/*        label="Distributor"*/}
-                    {/*      />*/}
-                    {/*      <FormControlLabel*/}
-                    {/*        value="Miller & Distributor"*/}
-                    {/*        control={<Radio />}*/}
-                    {/*        label="Miller & Distributor"*/}
-                    {/*      />*/}
-                    {/*    </RadioGroup>*/}
-                    {/*  )}*/}
-                    {/*/>*/}
                     <RHFRadioGroup name={"category"} row options={[
                       {label: "Miller",value: "Miller"},
                       {label: "Distributor",value: "Distributor"},
@@ -153,28 +116,33 @@ export default function JwtLoginView() {
                     ]}/>
                   </Grid>
                   <Grid item xs={12}>
-                    {/*<FormControlLabel*/}
-                    {/*  control={<Checkbox {...register('remember_me')} />}*/}
-                    {/*  label="Keep me logged in"*/}
-                    {/*/>*/}
                     <RHFCheckbox name={"remember_me"} label={"Keep me logged in"}/>
                   </Grid>
                   <Grid item xs={12}>
-                    <Button variant="contained" size={'large'} color="primary" fullWidth type="submit">
+                    <Button
+                      variant="contained"
+                      size={'large'}
+                      color="primary"
+                      fullWidth
+                      type="submit"
+                    >
                       Sign In
                     </Button>
                   </Grid>
                   <Grid item xs={12}>
-                    <Stack direction="row" sx={{mt:2, justifyContent: "center"}} spacing={1} >
+                    <Stack direction="row" sx={{ mt: 2, justifyContent: 'center' }} spacing={1}>
                       <Typography variant="subtitle2">Become NCCF CSP?</Typography>
-
-                      <Link component={RouterLink} href={paths.auth.jwt.register} variant="subtitle2">
+                      <Link
+                        component={RouterLink}
+                        href={paths.auth.jwt.register}
+                        variant="subtitle2"
+                      >
                         Create an account
                       </Link>
                     </Stack>
                   </Grid>
                 </Grid>
-              </form>
+              </FormProvider>
             </CardContent>
           </Card>
         </Box>
